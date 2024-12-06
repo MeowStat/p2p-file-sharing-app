@@ -1,0 +1,15 @@
+{
+    "tracker": "http://your-tracker-portal.local/announce",
+    "info": {
+        "name": "example_file.txt",
+        "length": 1048576,
+        "piece_length": 524288,
+        "pieces": [
+            "abcdef1234567890abcdef1234567890abcdef12",
+            "123456abcdef7890123456abcdef7890abcdef12"
+        ]
+    },
+    "created_by": "Your-Torrent-Client v1.0",
+    "creation_date": "2024-12-06T00:00:00Z",
+    "comment": "This is an example torrent file."
+}
