@@ -4,37 +4,17 @@ import torrent
 from client import client
 import constant
 import bencodepy
-
-def start_server(peer_adress):
-    server_address = f"{peer_address}:8080"
-import bencodepy
-
-
-
-
-
-
-
-
-
+from server import server
+from threading import Thread
 
     
 if __name__ == "__main__":
    
+    peer_ip = server.get_host_default_interface_ip()
+    server_port = 8080
 
-    filename = '4b6fcb2d521ef0fd442a5301e7932d16cc9f375a.torrent'
-    # Sử dụng hàm để đọc tệp torrent
-    
-
-    # # tracker_url = constant.TRACKER_URL
-    # # torrent.create_torrent(filename,tracker_url)
-
-
-    peer_address = input("Enter your peer address: ").strip()
-
-    # server_thread = threading.Thread(target=start_server, args = (peer_address,))
-    # server_thread.daemon = True
-    # server_thread.start()
+    peer_server = Thread(target=server.start_server, args=(peer_ip,server_port))
+    peer_server.start()
 
     while True:
         command_line = input("\n> ").strip()
