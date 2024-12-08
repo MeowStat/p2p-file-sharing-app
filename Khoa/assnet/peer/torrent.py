@@ -10,9 +10,12 @@ import bencodepy
 from typing import List
 def create_torrent(path: List[str], tracker_url: str) -> str:
     # Combine paths into a single string and create a hash for the filename
-    combined_path = ",".join(path)
-    hash_file_name = hashlib.sha1(combined_path.encode('utf-8')).hexdigest()
-    torrent_file_name = f"{hash_file_name}.torrent"
+    if (len(path) > 1):
+        combined_path = ",".join(path)
+        hash_file_name = hashlib.sha1(combined_path.encode('utf-8')).hexdigest()
+        torrent_file_name = f"{hash_file_name}.torrent"
+    else:
+        torrent_file_name = f"{path[0].split('.')[0]}.torrent"
     
     # Prepare the torrent metadata
     torrent_metadata = {

@@ -16,6 +16,8 @@ if __name__ == "__main__":
     peer_server = Thread(target=server.start_server, args=(peer_ip,server_port))
     peer_server.start()
 
+    peer_id = server.generate_peer_id_with_ip("-MStat-",peer_ip)
+
     while True:
         command_line = input("\n> ").strip()
 
@@ -32,7 +34,7 @@ if __name__ == "__main__":
         elif command_line.startswith("getTracker"):
             
             tracker_address = '192.168.56.1:8080'
-            tracker = client.AnnounceToTracker( peer_address, filename)
+            # tracker = client.AnnounceToTracker( peer_address, filename)
             print("No trackers connected.")
         
         elif command_line.startswith("share"):

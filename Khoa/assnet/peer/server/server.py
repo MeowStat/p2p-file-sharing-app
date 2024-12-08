@@ -1,5 +1,6 @@
 import socket
 from threading import Thread
+import hashlib
 
 
 def get_host_default_interface_ip():
@@ -12,6 +13,10 @@ def get_host_default_interface_ip():
     finally:
        s.close()
     return ip
+
+def generate_peer_id_with_ip(client_prefix, ip_address):
+    peer_id_hash = hashlib.sha1(ip_address.encode()).hexdigest()[:12]  # Get first 12 characters of the hash
+    return client_prefix + peer_id_hash
 
 def new_server_incoming(addr, conn):
     print(addr)
