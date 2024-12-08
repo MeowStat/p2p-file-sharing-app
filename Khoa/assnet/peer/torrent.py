@@ -49,16 +49,6 @@ def create_torrent(path: List[str], tracker_url: str) -> str:
     except Exception as e:
         print(f"Error creating torrent file: {e}")
         return ""
-    # #  Optionally create `torrent_info.json` (this part is also commented out in the Go code)
-    # torrent_info = {
-    #     "InfoHash": torrent_file_name
-    # }
-    # try:
-    #     with open("torrent_info.json", 'w') as json_file:
-    #         json.dump(torrent_info, json_file, indent=4)
-    # except Exception as e:
-    #     print(f"Error creating torrent_info.json: {e}")
-    #     return ""
     return torrent_file_name
 # Helper function to decode bytes to strings
 def decode_bytes(obj):
@@ -98,6 +88,47 @@ def read_torrent_as_json(torrent_file_path: str) -> str:
         print(f"Error reading torrent file: {e}")
         return None
     
+def get_info_hash(torrent_file_path: str) -> str:
+    try:
+        # Read the torrent file and decode it from Bencode
+        torrent_file_path = os.path.join("torrent_files",torrent_file_path)
+        with open(torrent_file_path, 'rb') as f:
+            torrent_data = f.read()
+        
+        # Decode the Bencoded data
+        torrent_metadata = bencodepy.decode(torrent_data)
+        
+        # Extract the 'info' dictionary from the metadata
+        info = torrent_metadata.get(b'info')
+
+        if info is None:
+            raise ValueError("The 'info' dictionary was not found in the torrent file.")
+
+        # Bencode the 'info' dictionary and compute the SHA1 hash
+        info_bencoded = bencodepy.encode(info)
+        info_hash = hashlib.sha1(info_bencoded).digest()
+
+        # Return the info_hash as a hex string
+        return info_hash.hex()
+
+    except Exception as e:
+        print(f"Error reading torrent file: {e}")
+        return None
+    
+def get_total_length_from_torrent(torrent_file):
+    # Read the .torrent file
+    torrent_file = os.path.join("torrent_files",torrent_file)
+    with open(torrent_file, 'rb') as f:
+        torrent_data = bencodepy.decode(f.read())
+
+    # Get the 'files' list inside the 'info' dictionary
+    files = torrent_data[b'info'][b'files']
+    
+    # Sum the 'length' of each file to get the total size in bytes
+    total_length = sum(file[b'length'] for file in files)
+    
+    return total_length
+
 def parse_torrent_file(filename):
     try:
         # Mở tệp torrent ở chế độ nhị phân

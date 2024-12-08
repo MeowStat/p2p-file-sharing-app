@@ -25,6 +25,7 @@ if __name__ == "__main__":
             print("Torrent App")
             print("Commands Available:")
             print("     create [tracker-url] [files]")
+            print("     seed [torrent-file]")
             print("     getlistofpeers [your torrent-file]")
             print("     getTracker")
             print("     download [your-torrent-file] [file]")
@@ -39,6 +40,10 @@ if __name__ == "__main__":
         
         elif command_line.startswith("share"):
             print("started sharing...")
+
+        elif command_line.startswith("seed"):
+            torrent_file = command_line.split(" ")[1]
+            client.Seed(peer_id,peer_ip,torrent_file)
 
         elif command_line.startswith("create"):
             tracker_url = constant.TRACKER_URL

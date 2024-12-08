@@ -5,6 +5,7 @@ import hashlib
 import json
 import bencodepy
 import torrent
+import requests
 
 connected_tracker_addresses = []
 
@@ -182,6 +183,8 @@ def AnnounceToTracker( peer_address, filename):
     # except Exception as e:
     #     print(f"Failed to announce to tracker: {e}")
 
+
+
 def connect_to_tracker(tracker_address, peer_address, filename):
     try:
         with socket.create_connection((tracker_address.split(":")[0], int(tracker_address.split(":")[1]))) as conn:
@@ -191,16 +194,15 @@ def connect_to_tracker(tracker_address, peer_address, filename):
     except Exception as e:
         print(f"Connection to tracker failed: {e}")
 
-def Seed( peer_address, filename):
+def Seed(peer_id, peer_address, filename ):
     try:
         torrent_info = torrent.parse_torrent_file(filename)
 
         tracker_url = torrent_info['announce']
-        filename = torrent_info['name']
 
         print(tracker_url)
 
-        connect_to_tracker(tracker_url, peer_address, filename)
+        seedToTracker(tracker_url,peer_id, peer_address, filename)
 
         exist = any(
                     tracker["address"] == tracker_url and tracker["filename"] == filename 
@@ -216,4 +218,42 @@ def Seed( peer_address, filename):
                 print("Already connected to this tracker for this file")
     except Exception as e:
         print(f"Failed to announce to tracker: {e}")
+
+def seedToTracker(tracker_url, peer_id, peer_ip, filename):
+    info_hash = torrent.get_info_hash(filename)
+    total_length = torrent.get_total_length_from_torrent(filename)
+    tracker_request(
+        tracker_url=tracker_url,
+        info_hash=info_hash,
+        peer_id=peer_id,
+        peer_ip=peer_ip,
+        downloaded=total_length)
+
+
+
+def tracker_request(tracker_url, info_hash, peer_id, peer_ip, port=8080, downloaded=0, left=0):
+    """Send a request to the tracker."""
+    # Construct the query parameters
+    params = {
+        'info_hash': info_hash,
+        'peer_id': peer_id,
+        'peer_ip': peer_ip,
+        'port': port,
+        'downloaded': downloaded,
+        'left': left,
+        'compact': 0,  # Request compact response (can also be 0 for verbose response)
+        'event': 'started'  # Can be 'started', 'completed', 'stopped', or omitted
+    }
+
+    # Send the GET request to the tracker
+    response = requests.get(tracker_url+"/announce", params=params)
+
+    # Check if the request was successful
+    if response.status_code == 200:
+        print("Tracker response:")
+        print(response.text)  # Print the raw response from the tracker
+        return response.text
+    else:
+        print(f"Failed to connect to tracker. Status code: {response.status_code}")
+        return None
 # Remaining functions like `disconnect_to_tracker` and `get_list_of_peers` can be implemented similarly.
