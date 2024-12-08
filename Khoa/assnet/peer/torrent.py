@@ -126,6 +126,8 @@ def get_total_length_from_torrent(torrent_file):
     
     # Sum the 'length' of each file to get the total size in bytes
     total_length = sum(file[b'length'] for file in files)
+
+    print(total_length)
     
     return total_length
 
