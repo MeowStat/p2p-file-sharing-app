@@ -1,0 +1,3 @@
+TRACKER_URL = '192.168.56.1:8080'
+PIECE_LENGTH = 512  # each piece is 512KB
+BLOCK_LENGTH = 16   # each block is 16KB

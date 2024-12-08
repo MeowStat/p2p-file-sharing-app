@@ -3,6 +3,8 @@ import struct
 import threading
 import hashlib
 import json
+import bencodepy
+import torrent
 
 connected_tracker_addresses = []
 
@@ -125,6 +127,59 @@ def perform_handshake(address, info_hash):
     except Exception as e:
         print(f"Handshake failed: {e}")
         return False
+def AnnounceToTracker( peer_address, filename):
+    try:
+        torrent_info = torrent.parse_torrent_file(filename)
+
+        tracker_url = torrent_info['announce']
+        filename = torrent_info['name']
+
+        print(tracker_url)
+
+        connect_to_tracker(tracker_url, peer_address, filename)
+
+        exist = any(
+                    tracker["address"] == tracker_url and tracker["filename"] == filename 
+                    for tracker in connected_tracker_addresses
+                )
+        if not exist:
+                connected_tracker_addresses.append({
+                    "address": tracker_url,
+                    "filename": filename
+                })
+                print(f"Tracker {tracker_url} added for file {filename}")
+        else:
+                print("Already connected to this tracker for this file")
+    except Exception as e:
+        print(f"Failed to announce to tracker: {e}")
+    # try:
+    #     with open(f"torrent_files/{filename}", "r") as f:
+    #     #     torrent_files = json.load(f)
+        
+    #     # for tf in torrent_files:
+    #     #     tracker_address = tf["announce"]
+    #         # filename = tf["FileName"]
+    #         bencoded_data = f.read()
+    #         tracker_address = bencodepy.decode(bencoded_data)
+    #         print(tracker_address)
+            # print(filename)
+            # connect_to_tracker(tracker_address, peer_address, filename)
+            
+            # exist = any(
+            #     tracker["Addr"] == tracker_address and tracker["Filename"] == filename 
+            #     for tracker in connected_tracker_addresses
+            # )
+            
+            # if not exist:
+            #     connected_tracker_addresses.append({
+            #         "Addr": tracker_address,
+            #         "Filename": filename
+            #     })
+            #     print(f"Tracker {tracker_address} added for file {filename}")
+            # else:
+            #     print("Already connected to this tracker for this file")
+    # except Exception as e:
+    #     print(f"Failed to announce to tracker: {e}")
 
 def connect_to_tracker(tracker_address, peer_address, filename):
     try:
