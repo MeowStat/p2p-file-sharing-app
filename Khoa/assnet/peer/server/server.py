@@ -26,7 +26,7 @@ class FileWorker:
 
     def load_pieces(self, file_path):
         with open(file_path, "rb") as f:
-            return [f.read(256 * 1024)]  
+            return torrent.split_file_into_pieces(f,256*1024)  
 
     def calculate_piece_hashes(self, pieces):
         return [hashlib.sha1(piece).digest() for piece in pieces]
