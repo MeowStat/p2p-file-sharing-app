@@ -95,9 +95,9 @@ def download_worker(peer, work_queue, results, info_hash):
 
 def request_piece_from_peer(address, piece_index, info_hash):
     try:
-        with socket.create_connection((address.split(":")[0], int(address.split(":")[1])), timeout=60) as conn:
-            perform_handshake(address, info_hash)
-            message = f"Requesting:{info_hash.hex()}:{piece_index}\n".encode()
+        with socket.create_connection((address, 8080), timeout=60) as conn:
+            # perform_handshake(address, info_hash)
+            message = f"Requesting:{info_hash}:{piece_index}\n".encode()
             conn.sendall(message)
 
             size_header = conn.recv(8)
@@ -119,16 +119,16 @@ def test_connection(address):
         print(f"Test connection failed: {e}")
         return False
 
-def perform_handshake(address, info_hash):
-    try:
-        with socket.create_connection((address.split(":")[0], int(address.split(":")[1])), timeout=5) as conn:
-            handshake_msg = f"HANDSHAKE:{info_hash.hex()}\n".encode()
-            conn.sendall(handshake_msg)
-            response = conn.recv(1024).decode()
-            return response.strip() == "OK"
-    except Exception as e:
-        print(f"Handshake failed: {e}")
-        return False
+    # def perform_handshake(address, info_hash):
+    # try:
+    #     with socket.create_connection((address.split(":")[0], int(address.split(":")[1])), timeout=5) as conn:
+    #         handshake_msg = f"HANDSHAKE:{info_hash.hex()}\n".encode()
+    #         conn.sendall(handshake_msg)
+    #         response = conn.recv(1024).decode()
+    #         return response.strip() == "OK"
+    # except Exception as e:
+    #     print(f"Handshake failed: {e}")
+    #     return False
     
 def AnnounceToTracker( peer_address, filename):
     try:
@@ -195,7 +195,7 @@ def connect_to_tracker(tracker_address, peer_address, filename):
 
 def Seed(peer_id, peer_address, filename ):
     try:
-        print(seedToTracker(peer_id, peer_address, filename))
+        seedToTracker(peer_id, peer_address, filename)
 
         # exist = any(
         #             tracker["address"] == tracker_url and tracker["filename"] == filename 
@@ -226,15 +226,15 @@ def seedToTracker(peer_id, peer_ip, filename):
                 downloaded=total_length,
                 event="completed"
             )
-    
 
 def Download(peer_id, peer_ip, torrentfile):
     try:
-        torrent_info = torrent.parse_torrent_file(torrentfile)
-        tracker_url = torrent_info['announce']
+        torrents = torrent.open_torrent(torrentfile)
+        print(torrents)
+        tracker_url = torrents[0]['announce']
 
         info_hash = torrent.get_info_hash(torrentfile)
-        total_length = torrent.get_total_length_from_torrent(torrentfile)
+        total_length = sum(torrent['length'] for torrent in torrents)
 
         tracker_response = tracker_request(tracker_url=tracker_url,
                                            info_hash=info_hash,
@@ -256,48 +256,49 @@ def Download(peer_id, peer_ip, torrentfile):
         print(active_peers)
 
         # Downloading stage
-        print(f"Downloading  file: {torrent_info['name']}")
+        for tf in torrents:
+            print(f"Downloading file: {tf['name']}")
 
-        num_workers = 3
-        work_queue = []
-        results = []
+            num_workers = 7
+            work_queue = []
+            results = []
 
-        # Enqueue work for current file
-        for i, hash in enumerate(torrent_info['pieces']):
-            work_queue.append(PieceWork(i, hash, torrent_info['piece_length']))
+            # Enqueue work for current file
+            for i, hash in enumerate(tf['piece_hashes']):
+                work_queue.append(PieceWork(i, hash, tf['piece_length']))
 
-        threads = []
-        for i in range(num_workers):
-            peer_index = i % len(active_peers)
-            thread = threading.Thread(target=download_worker, args=(active_peers[peer_index], work_queue, results, info_hash))
-            thread.start()
-            threads.append(thread)
+            threads = []
+            for i in range(num_workers):
+                peer_index = i % len(active_peers)
+                thread = threading.Thread(target=download_worker, args=(active_peers[peer_index], work_queue, results, info_hash))
+                thread.start()
+                threads.append(thread)
 
-        # Wait for all threads to finish
-        for thread in threads:
-            thread.join()
+            # Wait for all threads to finish
+            for thread in threads:
+                thread.join()
 
-        # Process results
-        pieces_by_index = {}
-        for result in results:
-            if result.error:
-                print(f"Error downloading piece {result.index}: {result.error}")
-                continue
-            pieces_by_index[result.index] = result.data
+            # Process results
+            pieces_by_index = {}
+            for result in results:
+                if result.error:
+                    print(f"Error downloading piece {result.index}: {result.error}")
+                    continue
+                pieces_by_index[result.index] = result.data
 
-            calculated_hash = hashlib.sha1(result.data).digest()
-            if calculated_hash != result.hash:
-                print(f"Piece {result.index} hash mismatch!")
-            else:
-                print(f"Successfully downloaded piece {result.index} of {torrent_info['name']}")
+                calculated_hash = hashlib.sha1(result.data).digest()
+                if calculated_hash != result.hash:
+                    print(f"Piece {result.index} hash mismatch!")
+                else:
+                    print(f"Successfully downloaded piece {result.index} of {tf['name']}")
 
-        # Merge pieces
-        try:
-            torrent.merge_pieces(torrent_info['name'], pieces_by_index, torrent_info["pieces"])  # Merge the pieces back into the final file
-        except Exception as e:
-            print(f"Error merging pieces for {torrent_info['name']}: {e}")
+            # Merge pieces
+            try:
+                torrent.merge_pieces(tf['name'], pieces_by_index, tf["pieces"])  # Merge the pieces back into the final file
+            except Exception as e:
+                print(f"Error merging pieces for {tf['name']}: {e}")
 
-        print(f"Download complete for file: {torrent_info['name']}")
+            print(f"Download complete for file: {tf['name']}")
         
         # Connect to tracker and send data
         # try:
@@ -318,15 +319,12 @@ def test_connection(address):
         return f"Connection failed: {e}"
     
     try:
-        # Set a timeout for read/write operations
         conn.settimeout(5)
 
-        # Send a test message
-        message = b"test:\n"  # Sending bytes, newline as delimiter
+        message = b"test:\n"
         conn.sendall(message)
 
-        # Read response
-        response = conn.recv(1024)  # Buffer size 1024 bytes
+        response = conn.recv(1024)  
         print(f"Received response: {response.decode()}")
 
     except socket.error as e:
@@ -339,16 +337,10 @@ def test_connection(address):
 
 def perform_handshake(address,info_hash):
     try:
-        # Create a TCP connection (with a timeout of 5 seconds)
         conn = socket.create_connection((address, 8080), timeout=5)  
-        # Send the handshake message
         handshake_msg = f"HANDSHAKE:{info_hash}\n"  
-        conn.sendall(handshake_msg.encode())  # Send the handshake message
-        
-        # Read the handshake response
-        response = conn.recv(1024).decode().strip()  # Read response, assume it's not too long (1024 bytes)
-        
-        # Check the response from the peer
+        conn.sendall(handshake_msg.encode())  
+        response = conn.recv(1024).decode().strip() 
         if response == "OK":
             print("Handshake successful!")
         else:
@@ -361,13 +353,11 @@ def perform_handshake(address,info_hash):
         print(f"Error during handshake: {e}")
         return False
     finally:
-        # Ensure the connection is closed
         conn.close()
-    
     return True
 
 def get_active_peer(address,info_hash,active_peers,lock):
-    thread_id = threading.get_ident()  # Get current thread's ID
+    thread_id = threading.get_ident() 
     if perform_handshake(address,info_hash):
         with lock:
             active_peers.append(address)
@@ -397,8 +387,6 @@ def getPeerList(response: str):
     return peers
 
 def tracker_request(tracker_url, info_hash, peer_id, peer_ip, port=8080, downloaded=0, left=0, event="started"):
-    """Send a request to the tracker."""
-    # Construct the query parameters
     params = {
         'info_hash': info_hash,
         'peer_id': peer_id,
@@ -406,19 +394,16 @@ def tracker_request(tracker_url, info_hash, peer_id, peer_ip, port=8080, downloa
         'port': port,
         'downloaded': downloaded,
         'left': left,
-        'compact': 0,  # Request compact response (can also be 0 for verbose response)
-        'event': event  # Can be 'started', 'completed', 'stopped', or omitted
+        'compact': 0,  
+        'event': event  
     }
 
-    # Send the GET request to the tracker
     response = requests.get(f"{tracker_url}/announce", params=params)
 
-    # Check if the request was successful
     if response.status_code == 200:
         print("Tracker response:")
-        print(response.text)  # Print the raw text response from the tracker
+        print(response.text)  
         return response.text
     else:
         print(f"Failed to connect to tracker. Status code: {response.status_code}")
         return None
-# Remaining functions like `disconnect_to_tracker` and `get_list_of_peers` can be implemented similarly.

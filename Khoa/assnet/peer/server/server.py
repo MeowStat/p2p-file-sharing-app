@@ -25,10 +25,8 @@ class FileWorker:
         self.piece_hashes = self.calculate_piece_hashes(self.pieces)
 
     def load_pieces(self, file_path):
-        # Load file pieces (this is just a mock for illustration)
-        # In real code, you'd split the file into chunks
         with open(file_path, "rb") as f:
-            return [f.read(256 * 1024)]  # Mock pieces: 256KB chunks
+            return [f.read(256 * 1024)]  
 
     def calculate_piece_hashes(self, pieces):
         return [hashlib.sha1(piece).digest() for piece in pieces]
@@ -63,21 +61,40 @@ def handle_connection(conn):
                 #     continue
                 # connection_workers[info_hash] = worker
 
-            elif message.startswith("Requesting"):
+            elif message.startswith("Requesting:"):
                 handle_piece_request(conn, message)
 
             else:
                 print(f"Unknown message: {message}")
                 conn.sendall(b"ERROR: Unknown message\n")
 
+def new_file_worker(file_path):
+    piece_length = 256 * 1024  # 256 KB pieces
+
+    # Get pieces using the stream_file_pieces function
+    pieces, err = torrent.stream_file_pieces(file_path, piece_length)
+    if err:
+        return None, err
+
+    # Calculate piece hashes
+    piece_hashes = []
+    for piece in pieces:
+        piece_hashes.append(hashlib.sha1(piece).digest())
+
+    # Create a FileWorker object
+    worker = FileWorker(file_path, pieces, len(pieces), piece_hashes)
+    return worker, None
+
 def handle_handshake(conn, message):
     info_hash = message[len("HANDSHAKE:"):]
     found = False
     torrent_files = getTorrentFiles()
+    torrent_file_name = ""
 
     for torrent_file in torrent_files:
         if info_hash == torrent.get_info_hash(torrent_file):
             found = True
+            torrent_file_name = torrent_file
             break
 
     if not found:
@@ -85,12 +102,13 @@ def handle_handshake(conn, message):
         conn.sendall(b"ERROR: Torrent file not found\n")
         return None
 
-    # In a real-world scenario, you'd parse the torrent file here
-    # Mocking the file worker and info hash
-    # file_path = f"files/{torrent_file_name}.torrent"
-    # worker = FileWorker(file_path)
+    tfs = torrent.open_torrent(f"{torrent_file_name}.torrent")
+    for tf in tfs:
+        filename = f"files/{tf['name']}"
+        print(tf['name'])
+        worker = new_file_worker(filename)
     conn.sendall(b"OK\n")
-    # return torrent_file_name, worker
+    return torrent_file_name, worker
 
 def handle_piece_request(conn, message):
     parts = message.split(":")

@@ -32,31 +32,18 @@ def create_torrent(paths, tracker_url):
         
         # Open the file
         with open(filepath, 'rb') as file:
-            # Get file information (file size, etc.)
             file_info = os.stat(filepath)
-            
-            # # Hash the file's name to generate an infoHash
-            # info_hash = hashlib.sha1(file_info.st_size.to_bytes(8, byteorder='big') 
-            #                          + file_info.st_mode.to_bytes(4, byteorder='big') 
-            #                          + path.encode()).digest()
-            
-            # Split the file into pieces
             pieces = split_file_into_pieces(file, piece_length)
-            
-            # Calculate the SHA-1 hash for each piece
             piece_hashes = [hashlib.sha1(piece).digest() for piece in pieces]
             
-            # Create a TorrentFile object (represented as a dictionary in Python)
             torrent_file = {
                 'announce': tracker_url,
-                # 'info_hash': info_hash,
                 'piece_hashes': piece_hashes,
                 'piece_length': piece_length,
                 'length': file_info.st_size,
                 'name': os.path.basename(path)
             }
             
-            # Append the TorrentFile object to the list
             torrent_files.append(torrent_file)
     
     return torrent_files
@@ -134,10 +121,11 @@ def to_torrent_file(torrent_data):
 
             # Convert piece_hashes to a list of pieces (you might need to decode them if necessary)
             piece_hashes = [piece_hashes[i:i + 20] for i in range(0, len(piece_hashes), 20)]
+            info_hash = hashlib.sha1(name.encode()).digest()
 
             torrent_file = {
                     'announce': announce,
-                    # 'info_hash': info_hash,
+                    'info_hash': info_hash.hex(),
                     'piece_hashes': piece_hashes,
                     'piece_length': piece_length,
                     'length': length,
@@ -153,6 +141,13 @@ def to_torrent_file(torrent_data):
     except Exception as e:
         print(f"Error extracting torrent file data: {e}")
         return []
+
+def stream_file_pieces(file_path, piece_length):
+    try:
+        with open(file_path, 'rb') as file:
+            return split_file_into_pieces(file, piece_length)
+    except Exception as e:
+        return None, f"Error streaming file pieces: {e}"
 
 # Old version
 
@@ -196,25 +191,20 @@ def read_torrent_as_json(torrent_file_path: str) -> str:
     
 def get_info_hash(torrent_file_path: str) -> str:
     try:
-        # Read the torrent file and decode it from Bencode
         torrent_file_path = os.path.join("torrent_files",torrent_file_path)
         with open(torrent_file_path, 'rb') as f:
             torrent_data = f.read()
         
-        # Decode the Bencoded data
         torrent_metadata = bencodepy.decode(torrent_data)
         
-        # Extract the 'info' dictionary from the metadata
         info = torrent_metadata.get(b'info')
 
         if info is None:
             raise ValueError("The 'info' dictionary was not found in the torrent file.")
 
-        # Bencode the 'info' dictionary and compute the SHA1 hash
         info_bencoded = bencodepy.encode(info)
         info_hash = hashlib.sha1(info_bencoded).digest()
 
-        # Return the info_hash as a hex string
         return info_hash.hex()
 
     except Exception as e:
