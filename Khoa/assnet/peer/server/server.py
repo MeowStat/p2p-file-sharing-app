@@ -1,5 +1,9 @@
 from threading import Thread
 import socket
+import sys
+import threading
+
+stop_event = threading.Event()
 
 def handle_connection(conn):
     with conn:
@@ -22,15 +26,30 @@ def handle_connection(conn):
             #     print(f"Unknown message: {message}")
             #     conn.sendall(b"ERROR: Unknown message\n")
 
+def stop():
+    stop_event.set()  # Đặt sự kiện dừng
+    print("Stopping the server...")
+
 def start_server(address):
     print("Thread server listening on: ", address)
     serversocket = socket.socket()
-    serversocket.bind((address.split(':')[0], int(address.split(':')[1])))
-    serversocket.listen(10)
+    try: 
+        serversocket.bind((address.split(':')[0], int(address.split(':')[1])))
+        serversocket.listen(10)
 
-    while True:
-        conn, addr = serversocket.accept()
-        print(f"Connection from {addr}")
+        while not stop_event.is_set():  # Kiểm tra stop_event
+            serversocket.settimeout(1)  # Timeout ngắn để không bị chặn lâu trong accept
+            try:
+                conn, addr = serversocket.accept()
+                print(f"Connection from {addr}")
+                conn.close()  # Đóng kết nối sau khi xử lý
+            except socket.timeout:
+                continue
+    except Exception as e:
+        print(f"Error in server: {e}")
+    finally:
+        serversocket.close()
+        print("Server has been stopped.")
     # print("Thread server listening on: {}:{}".format(host,port))
 
     # serversocket = socket.socket()

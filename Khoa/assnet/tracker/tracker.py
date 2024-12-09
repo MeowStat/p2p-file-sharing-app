@@ -81,7 +81,7 @@ def add_peer(peer_addr, file_name):
 def stop():
     event.set()
     print("Stop")
-    os._exit()
+    sys.exit()
 
 keyboard.add_hotkey("q", stop )
 
@@ -97,9 +97,14 @@ if  __name__ == "__main__":
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Tracker is running at address: {tracker_address}")
 
         while not event.is_set():
-            conn, addr = server.accept()
-            threading.Thread(target=handle_connection, args=(conn,)).start()
+            server.settimeout(1)
+            try:
+                conn, addr = server.accept()
+                threading.Thread(target=handle_connection, args=(conn,)).start()
+            except socket.timeout:
+                continue
     except Exception as e:
         print(f"Failed to initialize tracker: {e}")
     finally:
         server.close()
+        print("Server closed.")

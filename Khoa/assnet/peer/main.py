@@ -30,9 +30,8 @@ if __name__ == "__main__":
 
     peer_address = input("Enter your peer address: ").strip()   
     
-    # server_address = f"{peer_address}:8080"
-    # print("aa")
-    # threading.Thread(target=start_server, args=(server_address,)).start()
+    server_address = f"{peer_address}:8080"
+    threading.Thread(target=start_server, args=(server_address,)).start()
 
     # server_thread = threading.Thread(target=start_server, args = (peer_address,))
     # server_thread.daemon = True
@@ -109,7 +108,7 @@ if __name__ == "__main__":
                 continue
 
             tracker_url = args[1]
-            tracker_url = tracker_url + ":8080"
+            tracker_url = tracker_url + ":4040"
             source_files = args[2:]
             source_files = [file.strip() for file in source_files] 
             print(source_files)
