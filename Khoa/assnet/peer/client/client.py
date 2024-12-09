@@ -262,6 +262,15 @@ def Download(peer_id, peer_ip, torrentfile):
         for peer in peers:
             print(f"Testing connection to peer: {peer}")
             print(test_connection(peer))
+
+        active_peers = []
+
+        if len(active_peers) == 0:
+            print(f"No active peer!!!")
+            return
+        else:
+            print(active_peers)
+            return
         
     except Exception as e:
         print(f"DOWNLOAD: Failed to announce to tracker: {e}")
@@ -292,6 +301,35 @@ def test_connection(address):
         conn.close()
 
     return "Connection and message exchange successful."
+
+def perform_handshake(address, info_hash):
+    try:
+        # Create a TCP connection (with a timeout of 5 seconds)
+        conn = socket.create_connection((address, 8080), timeout=5)  
+        # Send the handshake message
+        handshake_msg = f"HANDSHAKE:{info_hash}\n"  
+        conn.sendall(handshake_msg.encode())  # Send the handshake message
+        
+        # Read the handshake response
+        response = conn.recv(1024).decode().strip()  # Read response, assume it's not too long (1024 bytes)
+        
+        # Check the response from the peer
+        if response == "OK":
+            print("Handshake successful!")
+        else:
+            print(f"Invalid handshake response: {response}")
+            return False
+    except socket.timeout:
+        print("Connection timeout.")
+        return False
+    except Exception as e:
+        print(f"Error during handshake: {e}")
+        return False
+    finally:
+        # Ensure the connection is closed
+        conn.close()
+    
+    return True
 
 def getPeerList(response: str):
     peers_line = next(line for line in response.splitlines() if line.startswith('peers='))

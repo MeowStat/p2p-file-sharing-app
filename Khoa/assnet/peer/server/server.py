@@ -130,7 +130,7 @@ def start_server(host,port):
     while True:
         conn, addr = serversocket.accept()
         print(f"Connection from {addr}")
-        nconn = Thread(target=handle_connection, args=(conn))
+        nconn = Thread(target=handle_connection, args=(conn,))
         nconn.start()
 
 
