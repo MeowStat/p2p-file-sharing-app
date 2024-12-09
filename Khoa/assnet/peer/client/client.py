@@ -228,7 +228,7 @@ def Download(peer_id, peer_ip, torrentfile):
                 pieces_by_index[result.index] = result.data
 
                 calculated_hash = hashlib.sha1(result.data).digest()
-                if calculated_hash != tf['piece_hases'][result.index]:
+                if calculated_hash != tf['piece_hashes'][result.index]:
                     print(f"Piece {result.index} hash mismatch!")
                 else:
                     print(f"Successfully downloaded piece {result.index} of {tf['name']}")
