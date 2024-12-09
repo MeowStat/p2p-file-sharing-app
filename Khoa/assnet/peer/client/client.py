@@ -258,12 +258,7 @@ def Download(peer_id, peer_ip, torrentfile):
         peers = getPeerList(tracker_response)
         peers.remove(peer_ip)   #Except my own peer IP
 
-        # First, test peer connection
-        for peer in peers:
-            print(f"Testing connection to peer: {peer}")
-            print(test_connection(peer))
-
-        active_peers = []
+        active_peers = handshake_peers_multithread(peers,info_hash)
 
         if len(active_peers) == 0:
             print(f"No active peer!!!")
@@ -302,7 +297,7 @@ def test_connection(address):
 
     return "Connection and message exchange successful."
 
-def perform_handshake(address, info_hash):
+def perform_handshake(address,info_hash):
     try:
         # Create a TCP connection (with a timeout of 5 seconds)
         conn = socket.create_connection((address, 8080), timeout=5)  
@@ -331,13 +326,36 @@ def perform_handshake(address, info_hash):
     
     return True
 
+def get_active_peer(address,info_hash,active_peers,lock):
+    thread_id = threading.get_ident()  # Get current thread's ID
+    if perform_handshake(address,info_hash):
+        with lock:
+            active_peers.append(address)
+            print(f"Thread {thread_id}: Added {address} to active peers")
+
+def handshake_peers_multithread(peers,info_hash):
+    active_peers = []
+    lock = threading.Lock()
+
+    threads = []
+    for peer in peers:
+        thread = threading.Thread(target=get_active_peer,args=(peer,info_hash,active_peers,lock))
+        thread.start()
+        threads.append(thread)
+
+    # Wait for all threads to complete
+    for thread in threads:
+        thread.join()
+
+    print(f"Active peers after handshake: {active_peers}")
+    return active_peers
+
+
 def getPeerList(response: str):
     peers_line = next(line for line in response.splitlines() if line.startswith('peers='))
     peers = peers_line[len("peers="):].split(',')
     print(peers)
     return peers
-
-
 
 def tracker_request(tracker_url, info_hash, peer_id, peer_ip, port=8080, downloaded=0, left=0, event="started"):
     """Send a request to the tracker."""

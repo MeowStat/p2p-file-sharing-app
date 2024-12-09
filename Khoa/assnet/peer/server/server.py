@@ -57,10 +57,11 @@ def handle_connection(conn):
             print(f"Received message: {message}")
 
             if message.startswith("HANDSHAKE:"):
-                info_hash, worker = handle_handshake(conn, message)
-                if worker is None:
-                    continue
-                connection_workers[info_hash] = worker
+                handle_handshake(conn, message)
+                # info_hash, worker = handle_handshake(conn, message)
+                # if worker is None:
+                #     continue
+                # connection_workers[info_hash] = worker
 
             elif message.startswith("Requesting"):
                 handle_piece_request(conn, message)
@@ -82,7 +83,7 @@ def handle_handshake(conn, message):
     if not found:
         print("This torrent file is not in the list.")
         conn.sendall(b"ERROR: Torrent file not found\n")
-        return "", None
+        return None
 
     # In a real-world scenario, you'd parse the torrent file here
     # Mocking the file worker and info hash
@@ -117,7 +118,7 @@ def handle_piece_request(conn, message):
     conn.sendall(piece)
 
 def getTorrentFiles():
-    files = [f for f in os.listdir("torrent_files") if os.listdir.isfile(os.join("torrent_files", f))]
+    files = [f for f in os.listdir("torrent_files") if os.path.isfile(os.path.join("torrent_files", f))]
     return files
 
 def start_server(host,port):
