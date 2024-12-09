@@ -228,16 +228,16 @@ def Download(peer_id, peer_ip, torrentfile):
                 pieces_by_index[result.index] = result.data
 
                 calculated_hash = hashlib.sha1(result.data).digest()
-                if calculated_hash != result.hash:
+                if calculated_hash != tf['piece_hases'][result.index]:
                     print(f"Piece {result.index} hash mismatch!")
                 else:
                     print(f"Successfully downloaded piece {result.index} of {tf['name']}")
 
             # Merge pieces
-            try:
-                torrent.merge_pieces(tf['name'], pieces_by_index, tf["pieces"])  # Merge the pieces back into the final file
-            except Exception as e:
-                print(f"Error merging pieces for {tf['name']}: {e}")
+            # try:
+            #     torrent.merge_pieces(tf['name'], pieces_by_index, tf["pieces"])  # Merge the pieces back into the final file
+            # except Exception as e:
+            #     print(f"Error merging pieces for {tf['name']}: {e}")
 
             print(f"Download complete for file: {tf['name']}")
         

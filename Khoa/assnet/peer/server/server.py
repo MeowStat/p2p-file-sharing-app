@@ -69,8 +69,7 @@ def handle_connection(conn):
                 conn.sendall(b"ERROR: Unknown message\n")
 
 def new_file_worker(file_path):
-    worker = FileWorker(file_path)
-    return worker, None
+    return FileWorker(file_path)
 
 def handle_handshake(conn, message):
     info_hash = message[len("HANDSHAKE:"):]
