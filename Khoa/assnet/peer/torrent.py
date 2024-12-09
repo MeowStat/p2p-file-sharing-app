@@ -56,7 +56,7 @@ def to_bencode_torrent(torrent_files):
     }
     for torrent_file in torrent_files:
         bencode_info = {
-            'pieces': b''.join(torrent_file['piece_hashes']),
+            'pieces': torrent_file['piece_hashes'],
             'piece length': torrent_file['piece_length'],
             'length': torrent_file['length'],
             'name': torrent_file['name']
