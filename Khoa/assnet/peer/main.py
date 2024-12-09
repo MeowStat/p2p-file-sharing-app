@@ -30,9 +30,9 @@ if __name__ == "__main__":
 
     peer_address = input("Enter your peer address: ").strip()   
     
-    server_address = f"{peer_address}:8080"
-    print("aa")
-    threading.Thread(target=start_server, args=(server_address,)).start()
+    # server_address = f"{peer_address}:8080"
+    # print("aa")
+    # threading.Thread(target=start_server, args=(server_address,)).start()
 
     # server_thread = threading.Thread(target=start_server, args = (peer_address,))
     # server_thread.daemon = True

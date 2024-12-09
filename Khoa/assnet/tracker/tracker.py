@@ -1,9 +1,14 @@
 import json
 import socket
 import threading
+import keyboard
 from datetime import datetime
+import sys
+import os
 
 peer_info = {}
+event = threading.Event()
+
 
 def handle_connection(conn):
     # print("have connect")
@@ -50,7 +55,7 @@ def handle_connection(conn):
             print("Name of in: ", file_name)
             peers = peer_info.get(file_name, [])
             # print("peer info :", peer_info[file_name])
-            response = f"LIST:{"Lab.pdf"}:{peers}!\n"
+            response = f"LIST:{file_name}:{peers}!\n"
             conn.sendall(response.encode('utf-8'))
             print(f"Sent response to peer: {response}")
             response = json.dumps(peer_info)
@@ -73,8 +78,16 @@ def add_peer(peer_addr, file_name):
         print(peers)
     
 
+def stop():
+    event.set()
+    print("Stop")
+    os._exit()
+
+keyboard.add_hotkey("q", stop )
+
 if  __name__ == "__main__":
-    tracker_address = input("Enter URL: ")
+    # tracker_address = input("Enter URL: ")
+    tracker_address = "192.168.1.7"
     tracker_address = f"{tracker_address}:8080"
 
     try:
@@ -83,7 +96,7 @@ if  __name__ == "__main__":
         server.listen(5)
         print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Tracker is running at address: {tracker_address}")
 
-        while True:
+        while not event.is_set():
             conn, addr = server.accept()
             threading.Thread(target=handle_connection, args=(conn,)).start()
     except Exception as e:
