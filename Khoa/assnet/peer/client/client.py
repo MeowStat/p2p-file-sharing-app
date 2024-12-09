@@ -254,12 +254,44 @@ def Download(peer_id, peer_ip, torrentfile):
                                            left=total_length
                                        )
         
+        # The peers list
         peers = getPeerList(tracker_response)
-        peers.remove(peer_ip)
-        print(peers)
+        peers.remove(peer_ip)   #Except my own peer IP
+
+        # First, test peer connection
+        for peer in peers:
+            print(f"Testing connection to peer: {peer}")
+            print(test_connection(peer))
         
     except Exception as e:
         print(f"DOWNLOAD: Failed to announce to tracker: {e}")
+
+def test_connection(address):
+    try:
+        # Set timeout for the entire operation
+        conn = socket.create_connection((address, 8080), timeout=5)  # Assuming the port 6881, change if needed
+    except socket.error as e:
+        return f"Connection failed: {e}"
+    
+    try:
+        # Set a timeout for read/write operations
+        conn.settimeout(5)
+
+        # Send a test message
+        message = b"test:\n"  # Sending bytes, newline as delimiter
+        conn.sendall(message)
+
+        # Read response
+        response = conn.recv(1024)  # Buffer size 1024 bytes
+        print(f"Received response: {response.decode()}")
+
+    except socket.error as e:
+        return f"Failed to send test message or read response: {e}"
+    
+    finally:
+        conn.close()
+
+    return "Connection and message exchange successful."
 
 def getPeerList(response: str):
     peers_line = next(line for line in response.splitlines() if line.startswith('peers='))
