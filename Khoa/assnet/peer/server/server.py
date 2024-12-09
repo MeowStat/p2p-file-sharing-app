@@ -69,20 +69,7 @@ def handle_connection(conn):
                 conn.sendall(b"ERROR: Unknown message\n")
 
 def new_file_worker(file_path):
-    piece_length = 256 * 1024  # 256 KB pieces
-
-    # Get pieces using the stream_file_pieces function
-    pieces, err = torrent.stream_file_pieces(file_path, piece_length)
-    if err:
-        return None, err
-
-    # Calculate piece hashes
-    piece_hashes = []
-    for piece in pieces:
-        piece_hashes.append(hashlib.sha1(piece).digest())
-
-    # Create a FileWorker object
-    worker = FileWorker(file_path, pieces, len(pieces), piece_hashes)
+    worker = FileWorker(file_path)
     return worker, None
 
 def handle_handshake(conn, message):
@@ -102,12 +89,14 @@ def handle_handshake(conn, message):
         conn.sendall(b"ERROR: Torrent file not found\n")
         return None
 
-    tfs = torrent.open_torrent(f"{torrent_file_name}.torrent")
+    tfs = torrent.open_torrent(torrent_file_name)
     for tf in tfs:
         filename = f"files/{tf['name']}"
         print(tf['name'])
         worker = new_file_worker(filename)
+        connection_workers[tf['info_hash']] = worker
     conn.sendall(b"OK\n")
+    print(connection_workers)
     return torrent_file_name, worker
 
 def handle_piece_request(conn, message):

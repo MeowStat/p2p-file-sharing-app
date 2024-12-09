@@ -27,65 +27,6 @@ class PieceResult:
         self.data = data
         self.error = error
 
-# def start_download(torrent_file, another_peer_addresses, peer_address):
-#     print(f"Starting download for: {torrent_file}")
-
-#     torrent_infos = torrent.open_torrent(f"torrent_files/{torrent_file}")
-#     if not tfs:
-#         print("Error opening torrent file.")
-#         return
-
-#     active_peers = []
-#     for peer in another_peer_addresses:
-#         print(f"Testing connection to peer: {peer}")
-#         if test_connection(peer):
-#             print(f"Peer {peer} is available")
-#             if perform_handshake(peer, tfs[0]["InfoHash"]):
-#                 active_peers.append(peer)
-#         else:
-#             print(f"Peer {peer} is not available.")
-
-#     if not active_peers:
-#         print("No available active peers found!")
-#         return
-
-#     for tf in tfs:
-#         print(f"Downloading file: {tf['Name']}")
-#         num_workers = 3
-#         work_queue = [PieceWork(i, h, tf["PieceLength"]) for i, h in enumerate(tf["PieceHashes"])]
-#         results = []
-
-#         threads = []
-#         for i in range(num_workers):
-#             peer = active_peers[i % len(active_peers)]
-#             thread = threading.Thread(target=download_worker, args=(peer, work_queue, results, tf["InfoHash"]))
-#             thread.start()
-#             threads.append(thread)
-
-#         for thread in threads:
-#             thread.join()
-
-#         pieces_by_index = {result.index: result.data for result in results if not result.error}
-#         for result in results:
-#             if result.error:
-#                 print(f"Error downloading piece {result.index}: {result.error}")
-#             else:
-#                 calculated_hash = hashlib.sha1(result.data).digest()
-#                 if calculated_hash != tf["PieceHashes"][result.index]:
-#                     print(f"Piece {result.index} hash mismatch!")
-#                 else:
-#                     print(f"Successfully downloaded piece {result.index} of {tf['Name']}")
-
-#         if torrent.merge_pieces(tf["Name"], pieces_by_index):
-#             print(f"Download complete for file: {tf['Name']}")
-#             tracker_address = tf["Announce"]
-#             torrent.create([tf["Name"]], tracker_address)
-#             connect_to_tracker(tracker_address, peer_address, tf["Name"])
-#         else:
-#             print(f"Error merging pieces for {tf['Name']}.")
-
-#     print("All downloads complete!")
-
 def download_worker(peer, work_queue, results, info_hash):
     while work_queue:
         piece = work_queue.pop(0)
@@ -270,7 +211,7 @@ def Download(peer_id, peer_ip, torrentfile):
             threads = []
             for i in range(num_workers):
                 peer_index = i % len(active_peers)
-                thread = threading.Thread(target=download_worker, args=(active_peers[peer_index], work_queue, results, info_hash))
+                thread = threading.Thread(target=download_worker, args=(active_peers[peer_index], work_queue, results, tf['info_hash']))
                 thread.start()
                 threads.append(thread)
 
