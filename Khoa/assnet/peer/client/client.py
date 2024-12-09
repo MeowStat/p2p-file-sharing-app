@@ -47,11 +47,14 @@ def start_download(torrent_file, peer_list, mypeer_address):
 def get_list_of_peer(tracker_url, filename):
     print(tracker_url)
     try:
+        print("djt")
         conn = socket.create_connection((tracker_url.split(":")[0], int(tracker_url.split(":")[1])))
+        print("fuck")
     except Exception as e:
         return f"Connection failed: {e}"
     
     try:
+        print("ww")
         message = f"LIST:{filename}"
 
         conn.sendall(message.encode())

@@ -27,12 +27,13 @@ if __name__ == "__main__":
     # # tracker_url = constant.TRACKER_URL
     # # torrent.create_torrent(filename,tracker_url)
 
-
+    # server_address = f"{peer_address}:8080"
+    # threading.Thread(target=start_server, args=(server_address,)).start()
     peer_address = input("Enter your peer address: ").strip()   
-    
     server_address = f"{peer_address}:8080"
     threading.Thread(target=start_server, args=(server_address,)).start()
-
+    
+    print("hi")
     # server_thread = threading.Thread(target=start_server, args = (peer_address,))
     # server_thread.daemon = True
     # server_thread.start()
@@ -83,7 +84,7 @@ if __name__ == "__main__":
                 print("Usage: announcetotracker [only one torrent-file]")
                 continue
             torrent_file = args[1]
-            peer_list = ['127.213.12', '182.112.871.1']
+            peer_list = ['192',]
             client.start_download(torrent_file, peer_list, peer_address)
 
         elif command_line.startswith("Seeding"):
@@ -96,6 +97,8 @@ if __name__ == "__main__":
             torrent_filename = args[1]
             try:
                 tracker = client.AnnounceToTracker(peer_address, torrent_filename)
+                # server_address = f"{peer_address}:8080"
+                # threading.Thread(target=start_server, args=(server_address,)).start()
             except Exception as e:
                 print(f"Failed to announce to tracker: {e}")
 

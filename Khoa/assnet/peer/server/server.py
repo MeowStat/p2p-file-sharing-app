@@ -2,6 +2,9 @@ from threading import Thread
 import socket
 import sys
 import threading
+import keyboard
+
+
 
 stop_event = threading.Event()
 
@@ -30,11 +33,18 @@ def stop():
     stop_event.set()  # Đặt sự kiện dừng
     print("Stopping the server...")
 
+keyboard.add_hotkey("q", stop )
+
 def start_server(address):
     print("Thread server listening on: ", address)
-    serversocket = socket.socket()
+    serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print(serversocket)
+    print("cc")
     try: 
-        serversocket.bind((address.split(':')[0], int(address.split(':')[1])))
+        print(address.split(':')[0].strip())
+        print(address.split(':')[1].strip())
+        serversocket.bind((address.split(':')[0].strip(),int(address.split(':')[1].strip())))
+        print("aaa")
         serversocket.listen(10)
 
         while not stop_event.is_set():  # Kiểm tra stop_event
