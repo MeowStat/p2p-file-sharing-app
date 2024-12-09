@@ -144,7 +144,7 @@ def to_torrent_file(torrent_data):
                     'name': name
             }
 
-            print(torrent_file)
+            # print(torrent_file)
 
             torrent_files.append(torrent_file)
 

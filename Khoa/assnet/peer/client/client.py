@@ -215,15 +215,10 @@ def Seed(peer_id, peer_address, filename ):
 def seedToTracker(peer_id, peer_ip, filename):
     torrents = torrent.open_torrent(filename)
     tracker_url = torrents[0]['announce']
-    print(tracker_url)
     info_hash = torrent.get_info_hash(filename)
-    total_length = sum(torrents[i]['length'] for i in torrents)
+    total_length = sum(torrent['length'] for torrent in torrents)
 
-    from threading import Thread
-
-    def periodic_seed_announce():
-        while True:
-            tracker_request(
+    tracker_request(
                 tracker_url=tracker_url,
                 info_hash=info_hash,
                 peer_id=peer_id,
@@ -231,10 +226,7 @@ def seedToTracker(peer_id, peer_ip, filename):
                 downloaded=total_length,
                 event="completed"
             )
-            time.sleep(1800)
-
-    seed_announce_thread = Thread(target=periodic_seed_announce, daemon=True)
-    seed_announce_thread.start()
+    
 
 def Download(peer_id, peer_ip, torrentfile):
     try:
