@@ -30,7 +30,7 @@ class PieceResult:
 # def start_download(torrent_file, another_peer_addresses, peer_address):
 #     print(f"Starting download for: {torrent_file}")
 
-#     tfs = torrent.open_torrent(f"torrent_files/{torrent_file}")
+#     torrent_infos = torrent.open_torrent(f"torrent_files/{torrent_file}")
 #     if not tfs:
 #         print("Error opening torrent file.")
 #         return
@@ -195,32 +195,29 @@ def connect_to_tracker(tracker_address, peer_address, filename):
 
 def Seed(peer_id, peer_address, filename ):
     try:
-        torrent_info = torrent.parse_torrent_file(filename)
+        print(seedToTracker(peer_id, peer_address, filename))
 
-        tracker_url = torrent_info['announce']
-
-        print(tracker_url)
-
-        print(seedToTracker(tracker_url,peer_id, peer_address, filename))
-
-        exist = any(
-                    tracker["address"] == tracker_url and tracker["filename"] == filename 
-                    for tracker in connected_tracker_addresses
-                )
-        if not exist:
-                connected_tracker_addresses.append({
-                    "address": tracker_url,
-                    "filename": filename
-                })
-                print(f"Tracker {tracker_url} added for file {filename}")
-        else:
-                print("Already connected to this tracker for this file")
+        # exist = any(
+        #             tracker["address"] == tracker_url and tracker["filename"] == filename 
+        #             for tracker in connected_tracker_addresses
+        #         )
+        # if not exist:
+        #         connected_tracker_addresses.append({
+        #             "address": tracker_url,
+        #             "filename": filename
+        #         })
+        #         print(f"Tracker {tracker_url} added for file {filename}")
+        # else:
+                # print("Already connected to this tracker for this file")
     except Exception as e:
         print(f"Failed to announce to tracker: {e}")
 
-def seedToTracker(tracker_url, peer_id, peer_ip, filename):
+def seedToTracker(peer_id, peer_ip, filename):
+    torrents = torrent.open_torrent(filename)
+    tracker_url = torrents[0]['announce']
+    print(tracker_url)
     info_hash = torrent.get_info_hash(filename)
-    total_length = torrent.get_total_length_from_torrent(filename)
+    total_length = sum(torrents[i]['length'] for i in torrents)
 
     from threading import Thread
 
@@ -263,9 +260,60 @@ def Download(peer_id, peer_ip, torrentfile):
         if len(active_peers) == 0:
             print(f"No active peer!!!")
             return
-        else:
-            print(active_peers)
-            return
+        
+        print(active_peers)
+
+        # Downloading stage
+        print(f"Downloading  file: {torrent_info['name']}")
+
+        num_workers = 3
+        work_queue = []
+        results = []
+
+        # Enqueue work for current file
+        for i, hash in enumerate(torrent_info['pieces']):
+            work_queue.append(PieceWork(i, hash, torrent_info['piece_length']))
+
+        threads = []
+        for i in range(num_workers):
+            peer_index = i % len(active_peers)
+            thread = threading.Thread(target=download_worker, args=(active_peers[peer_index], work_queue, results, info_hash))
+            thread.start()
+            threads.append(thread)
+
+        # Wait for all threads to finish
+        for thread in threads:
+            thread.join()
+
+        # Process results
+        pieces_by_index = {}
+        for result in results:
+            if result.error:
+                print(f"Error downloading piece {result.index}: {result.error}")
+                continue
+            pieces_by_index[result.index] = result.data
+
+            calculated_hash = hashlib.sha1(result.data).digest()
+            if calculated_hash != result.hash:
+                print(f"Piece {result.index} hash mismatch!")
+            else:
+                print(f"Successfully downloaded piece {result.index} of {torrent_info['name']}")
+
+        # Merge pieces
+        try:
+            torrent.merge_pieces(torrent_info['name'], pieces_by_index, torrent_info["pieces"])  # Merge the pieces back into the final file
+        except Exception as e:
+            print(f"Error merging pieces for {torrent_info['name']}: {e}")
+
+        print(f"Download complete for file: {torrent_info['name']}")
+        
+        # Connect to tracker and send data
+        # try:
+        #     # connect_to_trackertorrent_info['announce'], peer_address, torrent_info['name'])
+        # except Exception as e:
+        #     print(f"Failed to connect to tracker: {e}")
+        
+
         
     except Exception as e:
         print(f"DOWNLOAD: Failed to announce to tracker: {e}")
@@ -349,7 +397,6 @@ def handshake_peers_multithread(peers,info_hash):
 
     print(f"Active peers after handshake: {active_peers}")
     return active_peers
-
 
 def getPeerList(response: str):
     peers_line = next(line for line in response.splitlines() if line.startswith('peers='))

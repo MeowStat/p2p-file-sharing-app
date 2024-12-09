@@ -48,8 +48,8 @@ if __name__ == "__main__":
         elif command_line.startswith("create"):
             tracker_url = constant.TRACKER_URL
             filepath = command_line.split(" ")[1:]
-            torrent.create_torrent(filepath,tracker_url)
-            print("started create...")
+            torrent.Create(filepath,tracker_url)
+            # print("started create...")
 
         elif command_line.startswith("download"):
             torrent_file = command_line.split(" ")[1]
