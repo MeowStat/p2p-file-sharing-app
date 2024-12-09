@@ -25,64 +25,50 @@ class PieceResult:
         self.data = data
         self.error = error
 
-# def start_download(torrent_file, another_peer_addresses, peer_address):
-#     print(f"Starting download for: {torrent_file}")
+def start_download(torrent_file, peer_list, mypeer_address):
+    torrent_info = torrent.parse_torrent_file(torrent_file)
+    print(f"Starting download for: {torrent_file}")
 
-#     tfs = torrent.open_torrent(f"torrent_files/{torrent_file}")
-#     if not tfs:
-#         print("Error opening torrent file.")
-#         return
+    if not torrent_info:
+        print("Fail to parse torrent file.")
+        return
+    
+    active_peer = []
+    for peer in peer_list:
+        print(f"Testing connection to peer: {peer}")
+        if test_connection(peer):
+            print(f"Peer {peer} is available")
+        else:
+            print(f"Peer {peer} is not available")
+    # if not active_peers:
+    #     print("No active peers found!")
+    #     return
+    
+def get_list_of_peer(tracker_url, filename):
+    print(tracker_url)
+    try:
+        conn = socket.create_connection((tracker_url.split(":")[0], int(tracker_url.split(":")[1])))
+    except Exception as e:
+        return f"Connection failed: {e}"
+    
+    try:
+        message = f"LIST:{filename}"
 
-#     active_peers = []
-#     for peer in another_peer_addresses:
-#         print(f"Testing connection to peer: {peer}")
-#         if test_connection(peer):
-#             print(f"Peer {peer} is available")
-#             if perform_handshake(peer, tfs[0]["InfoHash"]):
-#                 active_peers.append(peer)
-#         else:
-#             print(f"Peer {peer} is not available.")
+        conn.sendall(message.encode())
 
-#     if not active_peers:
-#         print("No available active peers found!")
-#         return
+        response = b""
+        while True:
+            chunk = conn.recv(1024)
+            if not chunk or b"!" in chunk:
+                response += chunk
+                break
+        
+        print(response)
+    except Exception as e:
+        return f"Failed to communicate with tracker: {e}"
+    finally:
+        conn.close()
 
-#     for tf in tfs:
-#         print(f"Downloading file: {tf['Name']}")
-#         num_workers = 3
-#         work_queue = [PieceWork(i, h, tf["PieceLength"]) for i, h in enumerate(tf["PieceHashes"])]
-#         results = []
-
-#         threads = []
-#         for i in range(num_workers):
-#             peer = active_peers[i % len(active_peers)]
-#             thread = threading.Thread(target=download_worker, args=(peer, work_queue, results, tf["InfoHash"]))
-#             thread.start()
-#             threads.append(thread)
-
-#         for thread in threads:
-#             thread.join()
-
-#         pieces_by_index = {result.index: result.data for result in results if not result.error}
-#         for result in results:
-#             if result.error:
-#                 print(f"Error downloading piece {result.index}: {result.error}")
-#             else:
-#                 calculated_hash = hashlib.sha1(result.data).digest()
-#                 if calculated_hash != tf["PieceHashes"][result.index]:
-#                     print(f"Piece {result.index} hash mismatch!")
-#                 else:
-#                     print(f"Successfully downloaded piece {result.index} of {tf['Name']}")
-
-#         if torrent.merge_pieces(tf["Name"], pieces_by_index):
-#             print(f"Download complete for file: {tf['Name']}")
-#             tracker_address = tf["Announce"]
-#             torrent.create([tf["Name"]], tracker_address)
-#             connect_to_tracker(tracker_address, peer_address, tf["Name"])
-#         else:
-#             print(f"Error merging pieces for {tf['Name']}.")
-
-#     print("All downloads complete!")
 
 def download_worker(peer, work_queue, results, info_hash):
     while work_queue:
@@ -106,9 +92,9 @@ def request_piece_from_peer(address, piece_index, info_hash):
     except Exception as e:
         return None, str(e)
 
-def test_connection(address):
+def test_connection(peer):
     try:
-        with socket.create_connection((address.split(":")[0], int(address.split(":")[1])), timeout=5) as conn:
+        with socket.create_connection((peer, 8080), timeout=5) as conn:
             conn.sendall(b"test:\n")
             response = conn.recv(1024).decode()
             print(f"Received response: {response}")
@@ -134,7 +120,7 @@ def AnnounceToTracker( peer_address, filename):
         tracker_url = torrent_info['announce']
         filename = torrent_info['name']
 
-        print(tracker_url)
+        print("peer address: ", peer_address)
 
         connect_to_tracker(tracker_url, peer_address, filename)
 
@@ -152,34 +138,6 @@ def AnnounceToTracker( peer_address, filename):
                 print("Already connected to this tracker for this file")
     except Exception as e:
         print(f"Failed to announce to tracker: {e}")
-    # try:
-    #     with open(f"torrent_files/{filename}", "r") as f:
-    #     #     torrent_files = json.load(f)
-        
-    #     # for tf in torrent_files:
-    #     #     tracker_address = tf["announce"]
-    #         # filename = tf["FileName"]
-    #         bencoded_data = f.read()
-    #         tracker_address = bencodepy.decode(bencoded_data)
-    #         print(tracker_address)
-            # print(filename)
-            # connect_to_tracker(tracker_address, peer_address, filename)
-            
-            # exist = any(
-            #     tracker["Addr"] == tracker_address and tracker["Filename"] == filename 
-            #     for tracker in connected_tracker_addresses
-            # )
-            
-            # if not exist:
-            #     connected_tracker_addresses.append({
-            #         "Addr": tracker_address,
-            #         "Filename": filename
-            #     })
-            #     print(f"Tracker {tracker_address} added for file {filename}")
-            # else:
-            #     print("Already connected to this tracker for this file")
-    # except Exception as e:
-    #     print(f"Failed to announce to tracker: {e}")
 
 def connect_to_tracker(tracker_address, peer_address, filename):
     try:
