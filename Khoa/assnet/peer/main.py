@@ -46,8 +46,8 @@ if __name__ == "__main__":
             client.Seed(peer_id,peer_ip,torrent_file)
 
         elif command_line.startswith("create"):
-            tracker_url = constant.TRACKER_URL
-            filepath = command_line.split(" ")[1:]
+            tracker_url = f"http://{command_line.split(' ')[1]}:4000"
+            filepath = command_line.split(' ')[2:]
             torrent.Create(filepath,tracker_url)
             # print("started create...")
 
