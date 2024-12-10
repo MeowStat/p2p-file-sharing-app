@@ -52,6 +52,16 @@ def request_piece_from_peer(address, piece_index, info_hash):
     except Exception as e:
         return None, str(e)
 
+def receive_exactly(conn, size):
+    data = b""
+    while len(data) < size:
+        chunk = conn.recv(size - len(data))
+        if not chunk:
+            raise Exception("Connection closed prematurely")
+        data += chunk
+    return data
+
+
 def test_connection(address):
     try:
         with socket.create_connection((address.split(":")[0], int(address.split(":")[1])), timeout=5) as conn:
