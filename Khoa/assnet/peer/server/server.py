@@ -119,12 +119,12 @@ def handle_piece_request(conn, message):
 
     # Send the piece size (8 bytes header) and the actual piece
     piece = worker.pieces[piece_index]
-    print(piece)
+    # print(piece)
     # hash = worker.piece_hashes[piece_index]
     piece_size = len(piece)
-    print(piece_size)
-    size_header = struct.pack("!Q", piece_size)  # 8-byte big-endian header
-
+    # print(piece_size)
+    size_header = struct.pack(">Q", piece_size)  # 8-byte big-endian header
+    # print(size_header)
     conn.sendall(size_header)
     conn.sendall(piece)
 
