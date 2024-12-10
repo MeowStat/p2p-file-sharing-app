@@ -29,7 +29,9 @@ class FileWorker:
             return torrent.split_file_into_pieces(f,256*1024)  
 
     def calculate_piece_hashes(self, pieces):
-        return [hashlib.sha1(piece).digest() for piece in pieces]
+        hashes = [hashlib.sha1(piece).digest() for piece in pieces]
+        print(hashes)
+        return hashes
 
 def get_host_default_interface_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -117,7 +119,10 @@ def handle_piece_request(conn, message):
 
     # Send the piece size (8 bytes header) and the actual piece
     piece = worker.pieces[piece_index]
+    print(piece)
+    # hash = worker.piece_hashes[piece_index]
     piece_size = len(piece)
+    print(piece_size)
     size_header = struct.pack("!Q", piece_size)  # 8-byte big-endian header
 
     conn.sendall(size_header)

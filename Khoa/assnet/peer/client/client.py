@@ -42,9 +42,12 @@ def request_piece_from_peer(address, piece_index, info_hash):
             conn.sendall(message)
 
             size_header = conn.recv(8)
+            print(f"size_header:{size_header}")
+
             piece_size = struct.unpack(">Q", size_header)[0]
 
             data = conn.recv(piece_size)
+            print(data)
             return data, None
     except Exception as e:
         return None, str(e)
