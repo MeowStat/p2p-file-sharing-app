@@ -132,14 +132,14 @@ def getTorrentFiles():
     files = [f for f in os.listdir("torrent_files") if os.path.isfile(os.path.join("torrent_files", f))]
     return files
 
-def start_server(host,port):
+def start_server(host,port,stop_event):
     print("Thread server listening on: {}:{}".format(host,port))
 
     serversocket = socket.socket()
     serversocket.bind((host,port))
 
     serversocket.listen(10)
-    while True:
+    while not stop_event.is_set():
         conn, addr = serversocket.accept()
         print(f"Connection from {addr}")
         nconn = Thread(target=handle_connection, args=(conn,))

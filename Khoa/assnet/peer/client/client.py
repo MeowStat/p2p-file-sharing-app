@@ -179,6 +179,7 @@ def Download(peer_id, peer_ip, torrentfile):
 
         info_hash = torrent.get_info_hash(torrentfile)
         total_length = sum(torrent['length'] for torrent in torrents)
+        remain = total_length
 
         tracker_response = tracker_request(tracker_url=tracker_url,
                                            info_hash=info_hash,
@@ -237,12 +238,25 @@ def Download(peer_id, peer_ip, torrentfile):
                     print(f"Successfully downloaded piece {result.index} of {tf['name']}")
 
             # Merge pieces
-            # try:
-            #     torrent.merge_pieces(tf['name'], pieces_by_index, tf["pieces"])  # Merge the pieces back into the final file
-            # except Exception as e:
-            #     print(f"Error merging pieces for {tf['name']}: {e}")
+            try:
+                torrent.merge_pieces(tf['name'], pieces_by_index, tf["piece_hashes"]) 
+            except Exception as e:
+                print(f"Error merging pieces for {tf['name']}: {e}")
 
             print(f"Download complete for file: {tf['name']}")
+
+            remain = remain - tf['length']
+
+            
+            tracker_request(
+                tracker_url=tracker_url,
+                info_hash=info_hash,
+                peer_id=peer_id,
+                peer_ip=peer_ip,
+                downloaded=total_length-remain,
+                left=remain,
+                event="completed" if remain == 0 else "started"
+            )
         
         # Connect to tracker and send data
         # try:
@@ -361,3 +375,16 @@ def tracker_request(tracker_url, info_hash, peer_id, peer_ip, port=8080, downloa
     else:
         print(f"Failed to connect to tracker. Status code: {response.status_code}")
         return None
+    
+def disconnect_to_tracker(peer_id,peer_ip):
+    if len(connected_tracker_addresses) == 0:
+        print("No connected trackers")
+        return
+    for tracker in connected_tracker_addresses:
+        tracker_request(
+                tracker_url=tracker,
+                info_hash='',
+                peer_id=peer_id,
+                peer_ip=peer_ip,
+                event="stopped"
+            )
